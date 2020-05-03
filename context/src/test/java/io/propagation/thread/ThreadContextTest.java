@@ -53,11 +53,12 @@ import org.junit.runners.JUnit4;
 @SuppressWarnings("CheckReturnValue") // false-positive in test for current ver errorprone plugin
 public class ThreadContextTest {
 
-  private static final String PET = "pet";
-  private static final String FOOD = "food";
-  private static final String COLOR = "color";
-  private static final String FAVORITE = "favorite";
-  private static final String LUCKY = "lucky";
+  private static final ThreadContext.Key<String> PET = ThreadContext.key("pet");
+  private static final ThreadContext.Key<String> FOOD =
+      ThreadContext.keyWithDefault("food", "lasagna");
+  private static final ThreadContext.Key<String> COLOR = ThreadContext.key("color");
+  private static final ThreadContext.Key<Object> FAVORITE = ThreadContext.key("favorite");
+  private static final ThreadContext.Key<Integer> LUCKY = ThreadContext.key("lucky");
 
   private ThreadContext observed;
   private final Runnable runner =
@@ -152,28 +153,28 @@ public class ThreadContextTest {
 
     base.attach();
 
-    assertEquals("dog", ThreadContext.current().get(PET));
-    assertNull(ThreadContext.current().get(FOOD));
-    assertNull(ThreadContext.current().get(COLOR));
+    assertEquals("dog", PET.get());
+    assertEquals("lasagna", FOOD.get());
+    assertNull(COLOR.get());
 
     child.attach();
 
-    assertNull(ThreadContext.current().get(PET));
-    assertEquals("cheese", ThreadContext.current().get(FOOD));
-    assertNull(ThreadContext.current().get(COLOR));
+    assertNull(PET.get());
+    assertEquals("cheese", FOOD.get());
+    assertNull(COLOR.get());
 
     child.detach(base);
 
     // Should have values from base
-    assertEquals("dog", ThreadContext.current().get(PET));
-    assertNull(ThreadContext.current().get(FOOD));
-    assertNull(ThreadContext.current().get(COLOR));
+    assertEquals("dog", PET.get());
+    assertEquals("lasagna", FOOD.get());
+    assertNull(COLOR.get());
 
     base.detach(ThreadContext.empty());
 
-    assertNull(ThreadContext.current().get(PET));
-    assertNull(ThreadContext.current().get(FOOD));
-    assertNull(ThreadContext.current().get(COLOR));
+    assertNull(PET.get());
+    assertEquals("lasagna", FOOD.get());
+    assertNull(COLOR.get());
   }
 
   @Test
@@ -184,10 +185,10 @@ public class ThreadContextTest {
 
     ThreadContext toRestore = child.attach();
 
-    assertEquals("cat", ThreadContext.current().get(PET));
-    assertEquals("cheese", ThreadContext.current().get(FOOD));
-    assertEquals("blue", ThreadContext.current().get(COLOR));
-    assertEquals(fav, ThreadContext.current().get(FAVORITE));
+    assertEquals("cat", PET.get());
+    assertEquals("cheese", FOOD.get());
+    assertEquals("blue", COLOR.get());
+    assertEquals(fav, FAVORITE.get());
 
     child.detach(toRestore);
   }
@@ -200,11 +201,11 @@ public class ThreadContextTest {
 
     ThreadContext toRestore = child.attach();
 
-    assertEquals("cat", ThreadContext.current().get(PET));
-    assertEquals("cheese", ThreadContext.current().get(FOOD));
-    assertEquals("blue", ThreadContext.current().get(COLOR));
-    assertEquals(fav, ThreadContext.current().get(FAVORITE));
-    assertEquals(7, (int) ThreadContext.current().get(LUCKY));
+    assertEquals("cat", PET.get());
+    assertEquals("cheese", FOOD.get());
+    assertEquals("blue", COLOR.get());
+    assertEquals(fav, FAVORITE.get());
+    assertEquals(7, (int) LUCKY.get());
 
     child.detach(toRestore);
   }
@@ -377,7 +378,7 @@ public class ThreadContextTest {
           @Override
           @Nullable
           public Object call() throws Exception {
-            assertEquals("blue", ThreadContext.current().get(COLOR));
+            assertEquals("blue", COLOR.get());
 
             final ThreadContext child = ThreadContext.current().withValue(COLOR, "red");
             Future<String> workerThreadVal =
@@ -390,7 +391,7 @@ public class ThreadContextTest {
                         ThreadContext toRestore = child.attach();
                         try {
                           assertNotNull(toRestore);
-                          return (String) ThreadContext.current().get(COLOR);
+                          return COLOR.get();
                         } finally {
                           child.detach(toRestore);
                           assertEquals(initial, ThreadContext.current());
@@ -399,7 +400,7 @@ public class ThreadContextTest {
                     });
             assertEquals("red", workerThreadVal.get());
 
-            assertEquals("blue", ThreadContext.current().get(COLOR));
+            assertEquals("blue", COLOR.get());
             return null;
           }
         });
@@ -416,7 +417,7 @@ public class ThreadContextTest {
           @Override
           @Nullable
           public Object call() throws Exception {
-            assertEquals("blue", ThreadContext.current().get(COLOR));
+            assertEquals("blue", COLOR.get());
 
             Future<String> workerThreadVal =
                 scheduler.submit(
@@ -424,12 +425,12 @@ public class ThreadContextTest {
                       @Override
                       public String call() {
                         assertNotNull(ThreadContext.current());
-                        return (String) ThreadContext.current().get(COLOR);
+                        return COLOR.get();
                       }
                     });
             assertNull(workerThreadVal.get());
 
-            assertEquals("blue", ThreadContext.current().get(COLOR));
+            assertEquals("blue", COLOR.get());
             return null;
           }
         });
@@ -514,7 +515,7 @@ public class ThreadContextTest {
         ctx = ctx.withValue(PET, "tiger");
       }
       ctx = ctx.withValue(PET, "lion");
-      assertEquals("lion", ctx.get(PET));
+      assertEquals("lion", PET.get(ctx));
       assertNotNull(logRef.get());
       assertNotNull(logRef.get().getThrown());
       assertEquals(Level.SEVERE, logRef.get().getLevel());

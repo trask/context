@@ -37,7 +37,20 @@ We're interested to hear arguments against typed keys.
 
 But since one of the primary goals of this project is to improve interoperability
 across existing libraries' context propagation systems,
-`Context` and `ThreadContext` do not require typed keys.
+the underlying `Context` does not require typed keys.
+
+`ThreadContext` however, does use typed keys.
+
+This satisfies the two general purpose context propagation libraries,
+Reactor (untyped, no thread binding) and gRPC (typed, with thread binding).
+
+The other libraries that do thread-bound context propagation, like Armeria and Brave,
+appear at first glance to only propagate specific objects, like RequestContext and SpanContext.
+
+So thinking these could use typed keys, but definitely need to do work on this still.
+
+It would be nice if we don't need to add an untyped `ThreadContext` if possible,
+but this is also a possibility.
 
 ### Java 7?
 

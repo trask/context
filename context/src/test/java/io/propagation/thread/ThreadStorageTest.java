@@ -31,7 +31,7 @@ import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public final class ThreadStorageTest {
-  private static final String KEY = "test-key";
+  private static final ThreadContext.Key<Object> KEY = ThreadContext.key("test-key");
   private static final ThreadStorage storage = new DefaultThreadStorage();
 
   private ThreadContext contextBeforeTest;
