@@ -292,59 +292,62 @@ final class PersistentHashArrayMappedTrie {
     private EmptyNode() {}
 
     @Override
-    public Context withValue(Object k1, Object v1) {
+    public <V1> Context withValue(Key<V1> k1, V1 v1) {
       return PersistentHashArrayMappedTrie.put(null, k1, v1);
     }
 
     @Override
-    public Context withValues(Object k1, Object v1, Object k2, Object v2) {
+    public <V1, V2> Context withValues(Key<V1> k1, V1 v1, Key<V2> k2, V2 v2) {
       return PersistentHashArrayMappedTrie.withValues(null, k1, v1, k2, v2);
     }
 
     @Override
-    public Context withValues(Object k1, Object v1, Object k2, Object v2, Object k3, Object v3) {
+    public <V1, V2, V3> Context withValues(
+        Key<V1> k1, V1 v1, Key<V2> k2, V2 v2, Key<V3> k3, V3 v3) {
       return PersistentHashArrayMappedTrie.withValues(null, k1, v1, k2, v2, k3, v3);
     }
 
     @Override
-    public Context withValues(
-        Object k1, Object v1, Object k2, Object v2, Object k3, Object v3, Object k4, Object v4) {
+    public <V1, V2, V3, V4> Context withValues(
+        Key<V1> k1, V1 v1, Key<V2> k2, V2 v2, Key<V3> k3, V3 v3, Key<V4> k4, V4 v4) {
       return PersistentHashArrayMappedTrie.withValues(null, k1, v1, k2, v2, k3, v3, k4, v4);
     }
 
     @Override
     @Nullable
-    public Object get(Object key) {
+    protected <T> T get(Key<T> key) {
       return null;
     }
   }
 
   abstract static class Node extends Context {
     @Override
-    public Context withValue(Object k1, Object v1) {
+    public <V1> Context withValue(Key<V1> k1, V1 v1) {
       return PersistentHashArrayMappedTrie.put(this, k1, v1);
     }
 
     @Override
-    public Context withValues(Object k1, Object v1, Object k2, Object v2) {
+    public <V1, V2> Context withValues(Key<V1> k1, V1 v1, Key<V2> k2, V2 v2) {
       return PersistentHashArrayMappedTrie.withValues(this, k1, v1, k2, v2);
     }
 
     @Override
-    public Context withValues(Object k1, Object v1, Object k2, Object v2, Object k3, Object v3) {
+    public <V1, V2, V3> Context withValues(
+        Key<V1> k1, V1 v1, Key<V2> k2, V2 v2, Key<V3> k3, V3 v3) {
       return PersistentHashArrayMappedTrie.withValues(this, k1, v1, k2, v2, k3, v3);
     }
 
     @Override
-    public Context withValues(
-        Object k1, Object v1, Object k2, Object v2, Object k3, Object v3, Object k4, Object v4) {
+    public <V1, V2, V3, V4> Context withValues(
+        Key<V1> k1, V1 v1, Key<V2> k2, V2 v2, Key<V3> k3, V3 v3, Key<V4> k4, V4 v4) {
       return PersistentHashArrayMappedTrie.withValues(this, k1, v1, k2, v2, k3, v3, k4, v4);
     }
 
     @Override
     @Nullable
-    public Object get(Object key) {
-      return PersistentHashArrayMappedTrie.get(this, key);
+    @SuppressWarnings("unchecked")
+    protected <T> T get(Key<T> key) {
+      return (T) PersistentHashArrayMappedTrie.get(this, key);
     }
 
     abstract Object get(Object key, int hash, int bitsConsumed);

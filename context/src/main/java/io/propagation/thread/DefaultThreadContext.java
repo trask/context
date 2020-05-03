@@ -58,24 +58,31 @@ final class DefaultThreadContext extends ThreadContext {
   }
 
   @Override
-  public <V1> ThreadContext withValue(Key<V1> k1, V1 v1) {
+  public <V1> ThreadContext withValue(Context.Key<V1> k1, V1 v1) {
     return new DefaultThreadContext(context.withValue(k1, v1), this);
   }
 
   @Override
-  public <V1, V2> ThreadContext withValues(Key<V1> k1, V1 v1, Key<V2> k2, V2 v2) {
+  public <V1, V2> ThreadContext withValues(Context.Key<V1> k1, V1 v1, Context.Key<V2> k2, V2 v2) {
     return new DefaultThreadContext(context.withValues(k1, v1, k2, v2), this);
   }
 
   @Override
   public <V1, V2, V3> ThreadContext withValues(
-      Key<V1> k1, V1 v1, Key<V2> k2, V2 v2, Key<V3> k3, V3 v3) {
+      Context.Key<V1> k1, V1 v1, Context.Key<V2> k2, V2 v2, Context.Key<V3> k3, V3 v3) {
     return new DefaultThreadContext(context.withValues(k1, v1, k2, v2, k3, v3), this);
   }
 
   @Override
   public <V1, V2, V3, V4> ThreadContext withValues(
-      Key<V1> k1, V1 v1, Key<V2> k2, V2 v2, Key<V3> k3, V3 v3, Key<V4> k4, V4 v4) {
+      Context.Key<V1> k1,
+      V1 v1,
+      Context.Key<V2> k2,
+      V2 v2,
+      Context.Key<V3> k3,
+      V3 v3,
+      Context.Key<V4> k4,
+      V4 v4) {
     return new DefaultThreadContext(context.withValues(k1, v1, k2, v2, k3, v3, k4, v4), this);
   }
 
@@ -116,14 +123,8 @@ final class DefaultThreadContext extends ThreadContext {
   }
 
   @Override
-  public Context unwrap() {
-    return context;
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  protected <T> T get(Key<T> key) {
-    return (T) context.get(key);
+  protected <T> T get(Context.Key<T> key) {
+    return key.get(context);
   }
 
   private static void checkNotNull(Object reference, String errorMessage) {

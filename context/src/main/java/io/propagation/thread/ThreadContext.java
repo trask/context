@@ -60,7 +60,7 @@ import java.util.concurrent.Executor;
  * </ul>
  */
 /* @DoNotMock("Use empty() for a non-null ThreadContext") // commented out to avoid dependencies  */
-public abstract class ThreadContext {
+public abstract class ThreadContext extends Context {
 
   /**
    * Create a {@link Key} with the given debug name. Multiple different keys may have the same name;
@@ -71,8 +71,9 @@ public abstract class ThreadContext {
   }
 
   /**
-   * Create a {@link Key} with the given debug name and default value. Multiple different keys may
-   * have the same name; the name is intended for debugging purposes and does not impact behavior.
+   * Create a {@link Context.Key} with the given debug name and default value. Multiple different
+   * keys may have the same name; the name is intended for debugging purposes and does not impact
+   * behavior.
    */
   public static <T> Key<T> keyWithDefault(String name, T defaultValue) {
     return new Key<>(name, defaultValue);
@@ -97,57 +98,27 @@ public abstract class ThreadContext {
     return new DefaultThreadContext(context);
   }
 
-  /**
-   * Create a new context with the given key value set.
-   *
-   * <pre>
-   *   ThreadContext withCredential = ThreadContext.current().withValue("key", cred);
-   *   withCredential.run(new Runnable() {
-   *     public void run() {
-   *        readUserRecords(userId, ThreadContext.current().get("key"));
-   *     }
-   *   });
-   * </pre>
-   *
-   * <p>Note that multiple calls to {@code #withValue} can be chained together. That is,
-   *
-   * <pre>
-   * context.withValues(K1, V1, K2, V2);
-   * // is the same as
-   * context.withValue(K1, V1).withValue(K2, V2);
-   * </pre>
-   *
-   * <p>Nonetheless, {@link ThreadContext} should not be treated like a general purpose map with a
-   * large number of keys and values — combine multiple related items together into a single key
-   * instead of separating them. But if the items are unrelated, have separate keys for them.
-   */
-  public abstract <V1> ThreadContext withValue(Key<V1> k1, V1 v1);
+  @Override
+  public abstract <V1> ThreadContext withValue(Context.Key<V1> k1, V1 v1);
 
-  /** Create a new context with the given key value set. */
-  public abstract <V1, V2> ThreadContext withValues(Key<V1> k1, V1 v1, Key<V2> k2, V2 v2);
+  @Override
+  public abstract <V1, V2> ThreadContext withValues(
+      Context.Key<V1> k1, V1 v1, Context.Key<V2> k2, V2 v2);
 
-  /** Create a new context with the given key value set. */
+  @Override
   public abstract <V1, V2, V3> ThreadContext withValues(
-      Key<V1> k1, V1 v1, Key<V2> k2, V2 v2, Key<V3> k3, V3 v3);
+      Context.Key<V1> k1, V1 v1, Context.Key<V2> k2, V2 v2, Context.Key<V3> k3, V3 v3);
 
-  /**
-   * Create a new context with the given key value set.
-   *
-   * <p>For more than 4 key-value pairs, note that multiple calls to {@link #withValue} can be
-   * chained together. That is,
-   *
-   * <pre>
-   * context.withValues(K1, V1, K2, V2);
-   * // is the same as
-   * context.withValue(K1, V1).withValue(K2, V2);
-   * </pre>
-   *
-   * <p>Nonetheless, {@link ThreadContext} should not be treated like a general purpose map with a
-   * large number of keys and values — combine multiple related items together into a single key
-   * instead of separating them. But if the items are unrelated, have separate keys for them.
-   */
+  @Override
   public abstract <V1, V2, V3, V4> ThreadContext withValues(
-      Key<V1> k1, V1 v1, Key<V2> k2, V2 v2, Key<V3> k3, V3 v3, Key<V4> k4, V4 v4);
+      Context.Key<V1> k1,
+      V1 v1,
+      Context.Key<V2> k2,
+      V2 v2,
+      Context.Key<V3> k3,
+      V3 v3,
+      Context.Key<V4> k4,
+      V4 v4);
 
   /**
    * Attach this context, thus enter a new scope within which this context is {@link #current}. The
@@ -235,45 +206,23 @@ public abstract class ThreadContext {
     return ThreadBinding.currentContextExecutor(e);
   }
 
-  public abstract Context unwrap();
-
-  protected abstract <T> T get(Key<T> key);
+  @Override
+  protected abstract <T> T get(Context.Key<T> key);
 
   /** Key for indexing values stored in a context. */
-  public static final class Key<T> {
-    private final String name;
-    private final T defaultValue;
+  public static final class Key<T> extends Context.Key<T> {
 
     Key(String name) {
-      this(name, null);
+      super(name);
     }
 
     Key(String name, T defaultValue) {
-      this.name = checkNotNull(name, "name");
-      this.defaultValue = defaultValue;
-    }
-
-    /** Get the value from the {@link #current()} context for this key. */
-    public T get() {
-      return get(ThreadContext.current());
+      super(name, defaultValue);
     }
 
     /** Get the value from the specified context for this key. */
-    public T get(ThreadContext context) {
-      T value = context.get(this);
-      return value == null ? defaultValue : value;
-    }
-
-    @Override
-    public String toString() {
-      return name;
-    }
-
-    private static <T> T checkNotNull(T reference, String errorMessage) {
-      if (reference == null) {
-        throw new NullPointerException(errorMessage);
-      }
-      return reference;
+    public T get() {
+      return get(ThreadContext.current());
     }
   }
 }

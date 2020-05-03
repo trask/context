@@ -18,11 +18,25 @@ package io.propagation;
 
 public abstract class Context {
 
+  /**
+   * Create a {@link Key} with the given debug name. Multiple different keys may have the same name;
+   * the name is intended for debugging purposes and does not impact behavior.
+   */
+  public static <T> Key<T> key(String name) {
+    return new Key<>(name);
+  }
+
+  /**
+   * Create a {@link Key} with the given debug name and default value. Multiple different keys may
+   * have the same name; the name is intended for debugging purposes and does not impact behavior.
+   */
+  public static <T> Key<T> keyWithDefault(String name, T defaultValue) {
+    return new Key<>(name, defaultValue);
+  }
+
   public static Context empty() {
     return PersistentHashArrayMappedTrie.EmptyNode.INSTANCE;
   }
-
-  public abstract Object get(Object key);
 
   /**
    * Create a new context with the given key value set.
@@ -30,23 +44,23 @@ public abstract class Context {
    * <p>Note that multiple calls to {@code #withValue} can be chained together. That is,
    *
    * <pre>
-   * context.withValues(k1, v1, k2, v2);
+   * context.withValues(K1, V1, K2, V2);
    * // is the same as
-   * context.withValue(k1, v1).withValue(k2, v2);
+   * context.withValue(K1, V1).withValue(K2, V2);
    * </pre>
    *
    * <p>Nonetheless, {@link Context} should not be treated like a general purpose map with a large
    * number of keys and values — combine multiple related items together into a single key instead
    * of separating them. But if the items are unrelated, have separate keys for them.
    */
-  public abstract Context withValue(Object k1, Object v1);
+  public abstract <V1> Context withValue(Key<V1> k1, V1 v1);
 
   /** Create a new context with the given key value set. */
-  public abstract Context withValues(Object k1, Object v1, Object k2, Object v2);
+  public abstract <V1, V2> Context withValues(Key<V1> k1, V1 v1, Key<V2> k2, V2 v2);
 
   /** Create a new context with the given key value set. */
-  public abstract Context withValues(
-      Object k1, Object v1, Object k2, Object v2, Object k3, Object v3);
+  public abstract <V1, V2, V3> Context withValues(
+      Key<V1> k1, V1 v1, Key<V2> k2, V2 v2, Key<V3> k3, V3 v3);
 
   /**
    * Create a new context with the given key value set.
@@ -55,15 +69,50 @@ public abstract class Context {
    * chained together. That is,
    *
    * <pre>
-   * context.withValues(k1, v1, k2, v2);
+   * context.withValues(K1, V1, K2, V2);
    * // is the same as
-   * context.withValue(k1, v1).withValue(k2, v2);
+   * context.withValue(K1, V1).withValue(K2, V2);
    * </pre>
    *
    * <p>Nonetheless, {@link Context} should not be treated like a general purpose map with a large
    * number of keys and values — combine multiple related items together into a single key instead
    * of separating them. But if the items are unrelated, have separate keys for them.
    */
-  public abstract Context withValues(
-      Object k1, Object v1, Object k2, Object v2, Object k3, Object v3, Object k4, Object v4);
+  public abstract <V1, V2, V3, V4> Context withValues(
+      Key<V1> k1, V1 v1, Key<V2> k2, V2 v2, Key<V3> k3, V3 v3, Key<V4> k4, V4 v4);
+
+  protected abstract <T> T get(Key<T> key);
+
+  /** Key for indexing values stored in a context. */
+  public static class Key<T> {
+    private final String name;
+    private final T defaultValue;
+
+    protected Key(String name) {
+      this(name, null);
+    }
+
+    protected Key(String name, T defaultValue) {
+      this.name = checkNotNull(name, "name");
+      this.defaultValue = defaultValue;
+    }
+
+    /** Get the value from the specified context for this key. */
+    public T get(Context context) {
+      T value = context.get(this);
+      return value == null ? defaultValue : value;
+    }
+
+    @Override
+    public String toString() {
+      return name;
+    }
+
+    private static <T> T checkNotNull(T reference, String errorMessage) {
+      if (reference == null) {
+        throw new NullPointerException(errorMessage);
+      }
+      return reference;
+    }
+  }
 }

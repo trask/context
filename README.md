@@ -25,8 +25,8 @@ context propagation systems, the current proposal provides both:
 The default `ThreadContext` implementation uses `Context` to store state, which makes
 transitioning between the two efficient.
 
-Note: It would be possible for `ThreadContext` to extend `Context`, but this doesn't
-make anything more efficient, and makes the transition between the two less explicit.
+`ThreadContext` only extends `Context` so that users who are using `ThreadContext`
+can pass `ThreadContext.current()` directly to APIs that accept `Context`.
 
 ### Typed keys?
 
