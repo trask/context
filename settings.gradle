@@ -16,7 +16,8 @@ pluginManagement {
 
 rootProject.name = "propagation.io"
 include ":context",
-        ":grpc-context"
+        ":grpc-context",
+        ":reactor-interop"
 
 rootProject.children.each {
     it.projectDir = "$rootDir/" + it.name

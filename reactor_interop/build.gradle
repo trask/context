@@ -1,0 +1,23 @@
+plugins {
+    id "java"
+
+    id "ru.vyarus.animalsniffer"
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+description = 'Reactor Interop'
+ext.moduleName = "io.propagation.reactor"
+
+tasks.withType(JavaCompile).configureEach {
+    // turn off AndroidJdkLibsChecker and Java7ApiChecker
+    it.options.errorprone.allDisabledChecksAsWarnings = false
+}
+
+dependencies {
+    signature "org.codehaus.mojo.signature:java18:1.0@signature"
+
+    compile project(':context')
+    compile group: 'io.projectreactor', name: 'reactor-core', version: '3.1.0.RELEASE'
+}
