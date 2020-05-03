@@ -81,6 +81,8 @@ public abstract class Context {
   public abstract <V1, V2, V3, V4> Context withValues(
       Key<V1> k1, V1 v1, Key<V2> k2, V2 v2, Key<V3> k3, V3 v3, Key<V4> k4, V4 v4);
 
+  public abstract UntypedContext toUntyped();
+
   protected abstract <T> T get(Key<T> key);
 
   /** Key for indexing values stored in a context. */

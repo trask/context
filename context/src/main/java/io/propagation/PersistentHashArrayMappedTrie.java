@@ -314,6 +314,11 @@ final class PersistentHashArrayMappedTrie {
     }
 
     @Override
+    public UntypedContext toUntyped() {
+      return UntypedContext.empty();
+    }
+
+    @Override
     @Nullable
     protected <T> T get(Key<T> key) {
       return null;
@@ -344,6 +349,11 @@ final class PersistentHashArrayMappedTrie {
     }
 
     @Override
+    public UntypedContext toUntyped() {
+      return new DefaultUntypedContext(this);
+    }
+
+    @Override
     @Nullable
     @SuppressWarnings("unchecked")
     protected <T> T get(Key<T> key) {
@@ -357,19 +367,19 @@ final class PersistentHashArrayMappedTrie {
     abstract int size();
   }
 
-  private static Context withValues(Node root, Object k1, Object v1, Object k2, Object v2) {
+  static Node withValues(Node root, Object k1, Object v1, Object k2, Object v2) {
     Node newKeyValueEntries = PersistentHashArrayMappedTrie.put(root, k1, v1);
     return PersistentHashArrayMappedTrie.put(newKeyValueEntries, k2, v2);
   }
 
-  private static Context withValues(
+  static Node withValues(
       Node root, Object k1, Object v1, Object k2, Object v2, Object k3, Object v3) {
     Node newKeyValueEntries = PersistentHashArrayMappedTrie.put(root, k1, v1);
     newKeyValueEntries = PersistentHashArrayMappedTrie.put(newKeyValueEntries, k2, v2);
     return PersistentHashArrayMappedTrie.put(newKeyValueEntries, k3, v3);
   }
 
-  private static Context withValues(
+  static Node withValues(
       Node root,
       Object k1,
       Object v1,
