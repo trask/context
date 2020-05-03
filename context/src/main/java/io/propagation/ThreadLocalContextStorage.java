@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.propagation.context;
+package io.propagation;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;

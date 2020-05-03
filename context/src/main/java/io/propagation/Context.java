@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package io.propagation.context;
+package io.propagation;
 
-import io.propagation.context.PersistentHashArrayMappedTrie.Node;
+import io.propagation.PersistentHashArrayMappedTrie.Node;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;

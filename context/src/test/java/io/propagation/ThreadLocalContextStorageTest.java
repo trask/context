@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.propagation.context;
+package io.propagation;
 
 import static com.google.common.truth.Truth.assertThat;
 

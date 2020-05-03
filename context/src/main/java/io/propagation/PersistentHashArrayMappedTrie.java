@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.propagation.context;
+package io.propagation;
 
 import java.util.Arrays;
 import javax.annotation.Nullable;

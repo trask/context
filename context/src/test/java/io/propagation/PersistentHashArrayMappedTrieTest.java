@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package io.propagation.context;
+package io.propagation;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 
-import io.propagation.context.PersistentHashArrayMappedTrie.CollisionLeaf;
-import io.propagation.context.PersistentHashArrayMappedTrie.CompressedIndex;
-import io.propagation.context.PersistentHashArrayMappedTrie.Leaf;
-import io.propagation.context.PersistentHashArrayMappedTrie.Node;
+import io.propagation.PersistentHashArrayMappedTrie.CollisionLeaf;
+import io.propagation.PersistentHashArrayMappedTrie.CompressedIndex;
+import io.propagation.PersistentHashArrayMappedTrie.Leaf;
+import io.propagation.PersistentHashArrayMappedTrie.Node;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
