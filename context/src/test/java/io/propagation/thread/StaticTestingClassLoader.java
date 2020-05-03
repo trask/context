@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.propagation;
+package io.propagation.thread;
 
 import com.google.common.base.Preconditions;
 import com.google.common.io.ByteStreams;

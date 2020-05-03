@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.propagation;
+package io.propagation.thread;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -48,68 +48,68 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Tests for {@link Context}. */
+/** Tests for {@link ThreadContext}. */
 @RunWith(JUnit4.class)
 @SuppressWarnings("CheckReturnValue") // false-positive in test for current ver errorprone plugin
-public class ContextTest {
+public class ThreadContextTest {
 
-  private static final Context.Key<String> PET = Context.key("pet");
-  private static final Context.Key<String> FOOD = Context.keyWithDefault("food", "lasagna");
-  private static final Context.Key<String> COLOR = Context.key("color");
-  private static final Context.Key<Object> FAVORITE = Context.key("favorite");
-  private static final Context.Key<Integer> LUCKY = Context.key("lucky");
+  private static final String PET = "pet";
+  private static final String FOOD = "food";
+  private static final String COLOR = "color";
+  private static final String FAVORITE = "favorite";
+  private static final String LUCKY = "lucky";
 
-  private Context observed;
+  private ThreadContext observed;
   private final Runnable runner =
       new Runnable() {
         @Override
         public void run() {
-          observed = Context.current();
+          observed = ThreadContext.current();
         }
       };
   private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
   @Before
   public void setUp() {
-    Context.ROOT.attach();
+    ThreadContext.empty().attach();
   }
 
   @After
   public void tearDown() {
     scheduler.shutdown();
-    assertEquals(Context.ROOT, Context.current());
+    assertEquals(ThreadContext.empty(), ThreadContext.current());
   }
 
   @Test
   public void defaultContext() throws Exception {
-    final SettableFuture<Context> contextOfNewThread = SettableFuture.create();
-    Context contextOfThisThread = Context.ROOT.withValue(PET, "dog");
-    Context toRestore = contextOfThisThread.attach();
+    final SettableFuture<ThreadContext> contextOfNewThread = SettableFuture.create();
+    ThreadContext contextOfThisThread = ThreadContext.empty().withValue(PET, "dog");
+    ThreadContext toRestore = contextOfThisThread.attach();
     new Thread(
             new Runnable() {
               @Override
               public void run() {
-                contextOfNewThread.set(Context.current());
+                contextOfNewThread.set(ThreadContext.current());
               }
             })
         .start();
     assertNotNull(contextOfNewThread.get(5, TimeUnit.SECONDS));
     assertNotSame(contextOfThisThread, contextOfNewThread.get());
-    assertSame(contextOfThisThread, Context.current());
+    assertSame(contextOfThisThread, ThreadContext.current());
     contextOfThisThread.detach(toRestore);
   }
 
   @Test
   public void rootCanBeAttached() {
-    Context toRestore2 = Context.ROOT.attach();
-    assertSame(Context.ROOT, Context.current());
-    Context.ROOT.detach(toRestore2);
+    ThreadContext toRestore2 = ThreadContext.empty().attach();
+    assertSame(ThreadContext.empty(), ThreadContext.current());
+    ThreadContext.empty().detach(toRestore2);
   }
 
   @Test
   public void attachingNonCurrentReturnsCurrent() {
-    Context initial = Context.current();
-    Context base = initial.withValue(PET, "dog");
+    ThreadContext initial = ThreadContext.current();
+    ThreadContext base = initial.withValue(PET, "dog");
     assertSame(initial, base.attach());
     assertSame(base, initial.attach());
   }
@@ -130,14 +130,14 @@ public class ContextTest {
           @Override
           public void close() {}
         };
-    Logger logger = Logger.getLogger(Context.storage().getClass().getName());
+    Logger logger = Logger.getLogger(ThreadBinding.storage().getClass().getName());
     try {
       logger.addHandler(handler);
-      Context initial = Context.current();
-      Context base = initial.withValue(PET, "dog");
+      ThreadContext initial = ThreadContext.current();
+      ThreadContext base = initial.withValue(PET, "dog");
       // Base is not attached
       base.detach(initial);
-      assertSame(initial, Context.current());
+      assertSame(initial, ThreadContext.current());
       assertNotNull(logRef.get());
       assertEquals(Level.SEVERE, logRef.get().getLevel());
     } finally {
@@ -147,47 +147,47 @@ public class ContextTest {
 
   @Test
   public void valuesAndOverrides() {
-    Context base = Context.current().withValue(PET, "dog");
-    Context child = base.withValues(PET, null, FOOD, "cheese");
+    ThreadContext base = ThreadContext.current().withValue(PET, "dog");
+    ThreadContext child = base.withValues(PET, null, FOOD, "cheese");
 
     base.attach();
 
-    assertEquals("dog", PET.get());
-    assertEquals("lasagna", FOOD.get());
-    assertNull(COLOR.get());
+    assertEquals("dog", ThreadContext.current().get(PET));
+    assertNull(ThreadContext.current().get(FOOD));
+    assertNull(ThreadContext.current().get(COLOR));
 
     child.attach();
 
-    assertNull(PET.get());
-    assertEquals("cheese", FOOD.get());
-    assertNull(COLOR.get());
+    assertNull(ThreadContext.current().get(PET));
+    assertEquals("cheese", ThreadContext.current().get(FOOD));
+    assertNull(ThreadContext.current().get(COLOR));
 
     child.detach(base);
 
     // Should have values from base
-    assertEquals("dog", PET.get());
-    assertEquals("lasagna", FOOD.get());
-    assertNull(COLOR.get());
+    assertEquals("dog", ThreadContext.current().get(PET));
+    assertNull(ThreadContext.current().get(FOOD));
+    assertNull(ThreadContext.current().get(COLOR));
 
-    base.detach(Context.ROOT);
+    base.detach(ThreadContext.empty());
 
-    assertNull(PET.get());
-    assertEquals("lasagna", FOOD.get());
-    assertNull(COLOR.get());
+    assertNull(ThreadContext.current().get(PET));
+    assertNull(ThreadContext.current().get(FOOD));
+    assertNull(ThreadContext.current().get(COLOR));
   }
 
   @Test
   public void withValuesThree() {
     Object fav = new Object();
-    Context base = Context.current().withValues(PET, "dog", COLOR, "blue");
-    Context child = base.withValues(PET, "cat", FOOD, "cheese", FAVORITE, fav);
+    ThreadContext base = ThreadContext.current().withValues(PET, "dog", COLOR, "blue");
+    ThreadContext child = base.withValues(PET, "cat", FOOD, "cheese", FAVORITE, fav);
 
-    Context toRestore = child.attach();
+    ThreadContext toRestore = child.attach();
 
-    assertEquals("cat", PET.get());
-    assertEquals("cheese", FOOD.get());
-    assertEquals("blue", COLOR.get());
-    assertEquals(fav, FAVORITE.get());
+    assertEquals("cat", ThreadContext.current().get(PET));
+    assertEquals("cheese", ThreadContext.current().get(FOOD));
+    assertEquals("blue", ThreadContext.current().get(COLOR));
+    assertEquals(fav, ThreadContext.current().get(FAVORITE));
 
     child.detach(toRestore);
   }
@@ -195,16 +195,16 @@ public class ContextTest {
   @Test
   public void withValuesFour() {
     Object fav = new Object();
-    Context base = Context.current().withValues(PET, "dog", COLOR, "blue");
-    Context child = base.withValues(PET, "cat", FOOD, "cheese", FAVORITE, fav, LUCKY, 7);
+    ThreadContext base = ThreadContext.current().withValues(PET, "dog", COLOR, "blue");
+    ThreadContext child = base.withValues(PET, "cat", FOOD, "cheese", FAVORITE, fav, LUCKY, 7);
 
-    Context toRestore = child.attach();
+    ThreadContext toRestore = child.attach();
 
-    assertEquals("cat", PET.get());
-    assertEquals("cheese", FOOD.get());
-    assertEquals("blue", COLOR.get());
-    assertEquals(fav, FAVORITE.get());
-    assertEquals(7, (int) LUCKY.get());
+    assertEquals("cat", ThreadContext.current().get(PET));
+    assertEquals("cheese", ThreadContext.current().get(FOOD));
+    assertEquals("blue", ThreadContext.current().get(COLOR));
+    assertEquals(fav, ThreadContext.current().get(FAVORITE));
+    assertEquals(7, (int) ThreadContext.current().get(LUCKY));
 
     child.detach(toRestore);
   }
@@ -212,29 +212,29 @@ public class ContextTest {
   @Test
   @SuppressWarnings("TryFailRefactoring")
   public void testWrapRunnable() {
-    Context base = Context.current().withValue(PET, "cat");
-    Context current = Context.current().withValue(PET, "fish");
+    ThreadContext base = ThreadContext.current().withValue(PET, "cat");
+    ThreadContext current = ThreadContext.current().withValue(PET, "fish");
     current.attach();
 
-    base.wrap(runner).run();
+    base.wrapRunnable(runner).run();
     assertSame(base, observed);
-    assertSame(current, Context.current());
+    assertSame(current, ThreadContext.current());
 
-    current.wrap(runner).run();
+    current.wrapRunnable(runner).run();
     assertSame(current, observed);
-    assertSame(current, Context.current());
+    assertSame(current, ThreadContext.current());
 
     base.run(runner);
     assertSame(base, observed);
-    assertSame(current, Context.current());
+    assertSame(current, ThreadContext.current());
 
     current.run(runner);
     assertSame(current, observed);
-    assertSame(current, Context.current());
+    assertSame(current, ThreadContext.current());
 
     final TestError err = new TestError();
     try {
-      base.wrap(
+      base.wrapRunnable(
               new Runnable() {
                 @Override
                 public void run() {
@@ -246,16 +246,16 @@ public class ContextTest {
     } catch (TestError ex) {
       assertSame(err, ex);
     }
-    assertSame(current, Context.current());
+    assertSame(current, ThreadContext.current());
 
-    current.detach(Context.ROOT);
+    current.detach(ThreadContext.empty());
   }
 
   @Test
   @SuppressWarnings("TryFailRefactoring")
   public void testWrapCallable() throws Exception {
-    Context base = Context.current().withValue(PET, "cat");
-    Context current = Context.current().withValue(PET, "fish");
+    ThreadContext base = ThreadContext.current().withValue(PET, "cat");
+    ThreadContext current = ThreadContext.current().withValue(PET, "fish");
     current.attach();
 
     final Object ret = new Object();
@@ -268,25 +268,25 @@ public class ContextTest {
           }
         };
 
-    assertSame(ret, base.wrap(callable).call());
+    assertSame(ret, base.wrapCallable(callable).call());
     assertSame(base, observed);
-    assertSame(current, Context.current());
+    assertSame(current, ThreadContext.current());
 
-    assertSame(ret, current.wrap(callable).call());
+    assertSame(ret, current.wrapCallable(callable).call());
     assertSame(current, observed);
-    assertSame(current, Context.current());
+    assertSame(current, ThreadContext.current());
 
     assertSame(ret, base.call(callable));
     assertSame(base, observed);
-    assertSame(current, Context.current());
+    assertSame(current, ThreadContext.current());
 
     assertSame(ret, current.call(callable));
     assertSame(current, observed);
-    assertSame(current, Context.current());
+    assertSame(current, ThreadContext.current());
 
     final TestError err = new TestError();
     try {
-      base.wrap(
+      base.wrapCallable(
               new Callable<Object>() {
                 @Override
                 public Object call() {
@@ -298,17 +298,17 @@ public class ContextTest {
     } catch (TestError ex) {
       assertSame(err, ex);
     }
-    assertSame(current, Context.current());
+    assertSame(current, ThreadContext.current());
 
-    current.detach(Context.ROOT);
+    current.detach(ThreadContext.empty());
   }
 
   @Test
   public void currentContextExecutor() {
     QueuedExecutor queuedExecutor = new QueuedExecutor();
-    Executor executor = Context.currentContextExecutor(queuedExecutor);
-    Context base = Context.current().withValue(PET, "cat");
-    Context previous = base.attach();
+    Executor executor = ThreadContext.currentContextExecutor(queuedExecutor);
+    ThreadContext base = ThreadContext.current().withValue(PET, "cat");
+    ThreadContext previous = base.attach();
     try {
       executor.execute(runner);
     } finally {
@@ -321,7 +321,7 @@ public class ContextTest {
 
   @Test
   public void fixedContextExecutor() {
-    Context base = Context.current().withValue(PET, "cat");
+    ThreadContext base = ThreadContext.current().withValue(PET, "cat");
     QueuedExecutor queuedExecutor = new QueuedExecutor();
     base.fixedContextExecutor(queuedExecutor).execute(runner);
     assertEquals(1, queuedExecutor.runnables.size());
@@ -331,15 +331,15 @@ public class ContextTest {
 
   @Test
   public void typicalTryFinallyHandling() {
-    Context base = Context.current().withValue(COLOR, "blue");
-    Context previous = base.attach();
+    ThreadContext base = ThreadContext.current().withValue(COLOR, "blue");
+    ThreadContext previous = base.attach();
     try {
-      assertSame(base, Context.current());
+      assertSame(base, ThreadContext.current());
       // Do something
     } finally {
       base.detach(previous);
     }
-    assertNotSame(base, Context.current());
+    assertNotSame(base, ThreadContext.current());
   }
 
   private static class QueuedExecutor implements Executor {
@@ -352,8 +352,8 @@ public class ContextTest {
   }
 
   /**
-   * Tests initializing the {@link Context} class with a custom logger which uses Context's storage
-   * when logging.
+   * Tests initializing the {@link ThreadContext} class with a custom logger which uses
+   * ThreadContext's storage when logging.
    */
   @Test
   public void initContextWithCustomClassLoaderWithCustomLogger() throws Exception {
@@ -371,35 +371,35 @@ public class ContextTest {
    */
   @Test
   public void newThreadAttachContext() throws Exception {
-    Context parent = Context.current().withValue(COLOR, "blue");
+    ThreadContext parent = ThreadContext.current().withValue(COLOR, "blue");
     parent.call(
         new Callable<Object>() {
           @Override
           @Nullable
           public Object call() throws Exception {
-            assertEquals("blue", COLOR.get());
+            assertEquals("blue", ThreadContext.current().get(COLOR));
 
-            final Context child = Context.current().withValue(COLOR, "red");
+            final ThreadContext child = ThreadContext.current().withValue(COLOR, "red");
             Future<String> workerThreadVal =
                 scheduler.submit(
                     new Callable<String>() {
                       @Override
                       public String call() {
-                        Context initial = Context.current();
+                        ThreadContext initial = ThreadContext.current();
                         assertNotNull(initial);
-                        Context toRestore = child.attach();
+                        ThreadContext toRestore = child.attach();
                         try {
                           assertNotNull(toRestore);
-                          return COLOR.get();
+                          return (String) ThreadContext.current().get(COLOR);
                         } finally {
                           child.detach(toRestore);
-                          assertEquals(initial, Context.current());
+                          assertEquals(initial, ThreadContext.current());
                         }
                       }
                     });
             assertEquals("red", workerThreadVal.get());
 
-            assertEquals("blue", COLOR.get());
+            assertEquals("blue", ThreadContext.current().get(COLOR));
             return null;
           }
         });
@@ -410,26 +410,26 @@ public class ContextTest {
    */
   @Test
   public void newThreadWithoutContext() throws Exception {
-    Context parent = Context.current().withValue(COLOR, "blue");
+    ThreadContext parent = ThreadContext.current().withValue(COLOR, "blue");
     parent.call(
         new Callable<Object>() {
           @Override
           @Nullable
           public Object call() throws Exception {
-            assertEquals("blue", COLOR.get());
+            assertEquals("blue", ThreadContext.current().get(COLOR));
 
             Future<String> workerThreadVal =
                 scheduler.submit(
                     new Callable<String>() {
                       @Override
                       public String call() {
-                        assertNotNull(Context.current());
-                        return COLOR.get();
+                        assertNotNull(ThreadContext.current());
+                        return (String) ThreadContext.current().get(COLOR);
                       }
                     });
             assertNull(workerThreadVal.get());
 
-            assertEquals("blue", COLOR.get());
+            assertEquals("blue", ThreadContext.current().get(COLOR));
             return null;
           }
         });
@@ -437,7 +437,7 @@ public class ContextTest {
 
   @Test
   public void storageReturnsNullTest() throws Exception {
-    Class<?> lazyStorageClass = Class.forName("io.propagation.context.Context$LazyStorage");
+    Class<?> lazyStorageClass = Class.forName("io.propagation.thread.ThreadBinding$LazyStorage");
     Field storage = lazyStorageClass.getDeclaredField("storage");
     assertTrue(Modifier.isFinal(storage.getModifiers()));
     // use reflection to forcibly change the storage object to a test object
@@ -447,39 +447,39 @@ public class ContextTest {
     int storageModifiers = modifiersField.getInt(storage);
     modifiersField.set(storage, storageModifiers & ~Modifier.FINAL);
     Object o = storage.get(null);
-    Context.Storage originalStorage = (Context.Storage) o;
+    ThreadStorage originalStorage = (ThreadStorage) o;
     try {
       storage.set(
           null,
-          new Context.Storage() {
+          new ThreadStorage() {
             @Override
             @Nullable
-            public Context doAttach(Context toAttach) {
+            public ThreadContext doAttach(ThreadContext toAttach) {
               return null;
             }
 
             @Override
-            public void detach(Context toDetach, Context toRestore) {
+            public void detach(ThreadContext toDetach, ThreadContext toRestore) {
               // noop
             }
 
             @Override
             @Nullable
-            public Context current() {
+            public ThreadContext current() {
               return null;
             }
           });
       // current() returning null gets transformed into ROOT
-      assertEquals(Context.ROOT, Context.current());
+      assertEquals(ThreadContext.empty(), ThreadContext.current());
 
       // doAttach() returning null gets transformed into ROOT
-      Context blueContext = Context.current().withValue(COLOR, "blue");
-      Context toRestore = blueContext.attach();
-      assertEquals(Context.ROOT, toRestore);
+      ThreadContext blueContext = ThreadContext.current().withValue(COLOR, "blue");
+      ThreadContext toRestore = blueContext.attach();
+      assertEquals(ThreadContext.empty(), toRestore);
 
       // final sanity check
       blueContext.detach(toRestore);
-      assertEquals(Context.ROOT, Context.current());
+      assertEquals(ThreadContext.empty(), ThreadContext.current());
     } finally {
       // undo the changes
       storage.set(null, originalStorage);
@@ -505,16 +505,16 @@ public class ContextTest {
           @Override
           public void close() {}
         };
-    Logger logger = Logger.getLogger(Context.class.getName());
+    Logger logger = Logger.getLogger(DefaultThreadContext.class.getName());
     try {
       logger.addHandler(handler);
-      Context ctx = Context.current();
-      for (int i = 0; i < Context.CONTEXT_DEPTH_WARN_THRESH; i++) {
+      ThreadContext ctx = ThreadContext.current();
+      for (int i = 0; i < DefaultThreadContext.CONTEXT_DEPTH_WARN_THRESH; i++) {
         assertNull(logRef.get());
         ctx = ctx.withValue(PET, "tiger");
       }
       ctx = ctx.withValue(PET, "lion");
-      assertEquals("lion", PET.get(ctx));
+      assertEquals("lion", ctx.get(PET));
       assertNotNull(logRef.get());
       assertNotNull(logRef.get().getThrown());
       assertEquals(Level.SEVERE, logRef.get().getLevel());
@@ -527,14 +527,14 @@ public class ContextTest {
   public static final class LoadMeWithStaticTestingClassLoader implements Runnable {
     @Override
     public void run() {
-      Logger logger = Logger.getLogger(Context.class.getName());
+      Logger logger = Logger.getLogger(ThreadContext.class.getName());
       logger.setLevel(Level.ALL);
       Handler handler =
           new Handler() {
             @Override
             public void publish(LogRecord record) {
-              Context ctx = Context.current();
-              Context previous = ctx.attach();
+              ThreadContext ctx = ThreadContext.current();
+              ThreadContext previous = ctx.attach();
               ctx.detach(previous);
             }
 
@@ -547,7 +547,7 @@ public class ContextTest {
       logger.addHandler(handler);
 
       try {
-        assertNotNull(Context.ROOT);
+        assertNotNull(ThreadContext.empty());
       } finally {
         logger.removeHandler(handler);
       }

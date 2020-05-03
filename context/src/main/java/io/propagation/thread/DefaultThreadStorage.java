@@ -14,28 +14,28 @@
  * limitations under the License.
  */
 
-package io.propagation;
+package io.propagation.thread;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /** A {@link ThreadLocal}-based context storage implementation. Used by default. */
-final class ThreadLocalContextStorage extends Context.Storage {
-  private static final Logger log = Logger.getLogger(ThreadLocalContextStorage.class.getName());
+final class DefaultThreadStorage extends ThreadStorage {
+  private static final Logger log = Logger.getLogger(DefaultThreadStorage.class.getName());
 
   /** Currently bound context. */
   // VisibleForTesting
-  static final ThreadLocal<Context> localContext = new ThreadLocal<>();
+  static final ThreadLocal<ThreadContext> localContext = new ThreadLocal<>();
 
   @Override
-  public Context doAttach(Context toAttach) {
-    Context current = current();
+  public ThreadContext doAttach(ThreadContext toAttach) {
+    ThreadContext current = current();
     localContext.set(toAttach);
     return current;
   }
 
   @Override
-  public void detach(Context toDetach, Context toRestore) {
+  public void detach(ThreadContext toDetach, ThreadContext toRestore) {
     if (current() != toDetach) {
       // Log a severe message instead of throwing an exception as the context to attach is assumed
       // to be the correct one and the unbalanced state represents a coding mistake in a lower
@@ -45,7 +45,7 @@ final class ThreadLocalContextStorage extends Context.Storage {
           "Context was not attached when detaching",
           new Throwable().fillInStackTrace());
     }
-    if (toRestore != Context.ROOT) {
+    if (toRestore != ThreadContext.empty()) {
       localContext.set(toRestore);
     } else {
       // Avoid leaking our ClassLoader via ROOT if this Thread is reused across multiple
@@ -61,10 +61,10 @@ final class ThreadLocalContextStorage extends Context.Storage {
   }
 
   @Override
-  public Context current() {
-    Context current = localContext.get();
+  public ThreadContext current() {
+    ThreadContext current = localContext.get();
     if (current == null) {
-      return Context.ROOT;
+      return ThreadContext.empty();
     }
     return current;
   }
