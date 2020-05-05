@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.propagation;
+package io.propagation.thread;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -30,31 +30,31 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
-public final class ThreadLocalContextStorageTest {
-  private static final Context.Key<Object> KEY = Context.key("test-key");
-  private static final ThreadLocalContextStorage storage = new ThreadLocalContextStorage();
+public final class ThreadContextStorageTest {
+  private static final ThreadContext.Key<Object> KEY = ThreadContext.key("test-key");
+  private static final ThreadContextStorage storage = new DefaultThreadContextStorage();
 
-  private Context contextBeforeTest;
+  private ThreadContext contextBeforeTest;
 
   @Before
   public void saveContext() {
-    contextBeforeTest = storage.doAttach(Context.ROOT);
+    contextBeforeTest = storage.doAttach(ThreadContext.empty());
   }
 
   @After
   public void restoreContext() {
-    storage.detach(Context.ROOT, contextBeforeTest);
+    storage.detach(ThreadContext.empty(), contextBeforeTest);
   }
 
   @Test
   public void detach_threadLocalClearedOnRoot() {
-    Context context = Context.ROOT.withValue(KEY, new Object());
-    Context old = storage.doAttach(context);
+    ThreadContext context = ThreadContext.empty().withValue(KEY, new Object());
+    ThreadContext old = storage.doAttach(context);
     assertThat(storage.current()).isSameInstanceAs(context);
-    assertThat(ThreadLocalContextStorage.localContext.get()).isSameInstanceAs(context);
+    assertThat(DefaultThreadContextStorage.localContext.get()).isSameInstanceAs(context);
     storage.detach(context, old);
     // thread local must contain null to avoid leaking our ClassLoader via ROOT
-    assertThat(ThreadLocalContextStorage.localContext.get()).isNull();
+    assertThat(DefaultThreadContextStorage.localContext.get()).isNull();
   }
 
   @Test
@@ -75,14 +75,14 @@ public final class ThreadLocalContextStorageTest {
         };
 
     // Explicitly choose ROOT as the current context
-    Context context = Context.ROOT;
-    Context old = storage.doAttach(context);
+    ThreadContext context = ThreadContext.empty();
+    ThreadContext old = storage.doAttach(context);
 
     // Attach and detach a random context
-    Context innerContext = Context.ROOT.withValue(KEY, new Object());
+    ThreadContext innerContext = ThreadContext.empty().withValue(KEY, new Object());
     storage.detach(innerContext, storage.doAttach(innerContext));
 
-    Logger logger = Logger.getLogger(ThreadLocalContextStorage.class.getName());
+    Logger logger = Logger.getLogger(ThreadContextStorage.class.getName());
     logger.addHandler(handler);
     try {
       // Make sure detaching ROOT doesn't log a warning

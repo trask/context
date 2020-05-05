@@ -39,8 +39,8 @@ public class PersistentHashArrayMappedTrieTest {
     Key key = new Key(0);
     Object value1 = new Object();
     Object value2 = new Object();
-    Leaf<Key, Object> leaf = new Leaf<>(key, value1);
-    Node<Key, Object> ret = leaf.put(key, value2, key.hashCode(), 0);
+    Leaf leaf = new Leaf(key, value1);
+    Node ret = leaf.put(key, value2, key.hashCode(), 0);
     assertTrue(ret instanceof Leaf);
     assertSame(value2, ret.get(key, key.hashCode(), 0));
 
@@ -56,8 +56,8 @@ public class PersistentHashArrayMappedTrieTest {
     Key key2 = new Key(0);
     Object value1 = new Object();
     Object value2 = new Object();
-    Leaf<Key, Object> leaf = new Leaf<>(key1, value1);
-    Node<Key, Object> ret = leaf.put(key2, value2, key2.hashCode(), 0);
+    Leaf leaf = new Leaf(key1, value1);
+    Node ret = leaf.put(key2, value2, key2.hashCode(), 0);
     assertTrue(ret instanceof CollisionLeaf);
     assertSame(value1, ret.get(key1, key1.hashCode(), 0));
     assertSame(value2, ret.get(key2, key2.hashCode(), 0));
@@ -75,8 +75,8 @@ public class PersistentHashArrayMappedTrieTest {
     Key key2 = new Key(1);
     Object value1 = new Object();
     Object value2 = new Object();
-    Leaf<Key, Object> leaf = new Leaf<>(key1, value1);
-    Node<Key, Object> ret = leaf.put(key2, value2, key2.hashCode(), 0);
+    Leaf leaf = new Leaf(key1, value1);
+    Node ret = leaf.put(key2, value2, key2.hashCode(), 0);
     assertTrue(ret instanceof CompressedIndex);
     assertSame(value1, ret.get(key1, key1.hashCode(), 0));
     assertSame(value2, ret.get(key2, key2.hashCode(), 0));
@@ -92,13 +92,13 @@ public class PersistentHashArrayMappedTrieTest {
   public void collisionLeaf_assertKeysDifferent() {
     Key key1 = new Key(0);
     thrown.expect(AssertionError.class);
-    new CollisionLeaf<>(key1, new Object(), key1, new Object());
+    new CollisionLeaf(key1, new Object(), key1, new Object());
   }
 
   @Test
   public void collisionLeaf_assertHashesSame() {
     thrown.expect(AssertionError.class);
-    new CollisionLeaf<>(new Key(0), new Object(), new Key(1), new Object());
+    new CollisionLeaf(new Key(0), new Object(), new Key(1), new Object());
   }
 
   @Test
@@ -109,9 +109,9 @@ public class PersistentHashArrayMappedTrieTest {
     Object value1 = new Object();
     Object value2 = new Object();
     Object insertValue = new Object();
-    CollisionLeaf<Key, Object> leaf = new CollisionLeaf<>(key1, value1, key2, value2);
+    CollisionLeaf leaf = new CollisionLeaf(key1, value1, key2, value2);
 
-    Node<Key, Object> ret = leaf.put(insertKey, insertValue, insertKey.hashCode(), 0);
+    Node ret = leaf.put(insertKey, insertValue, insertKey.hashCode(), 0);
     assertTrue(ret instanceof CompressedIndex);
     assertSame(value1, ret.get(key1, key1.hashCode(), 0));
     assertSame(value2, ret.get(key2, key2.hashCode(), 0));
@@ -131,9 +131,9 @@ public class PersistentHashArrayMappedTrieTest {
     Object originalValue = new Object();
     Key key = new Key(replaceKey.hashCode());
     Object value = new Object();
-    CollisionLeaf<Key, Object> leaf = new CollisionLeaf<>(replaceKey, originalValue, key, value);
+    CollisionLeaf leaf = new CollisionLeaf(replaceKey, originalValue, key, value);
     Object replaceValue = new Object();
-    Node<Key, Object> ret = leaf.put(replaceKey, replaceValue, replaceKey.hashCode(), 0);
+    Node ret = leaf.put(replaceKey, replaceValue, replaceKey.hashCode(), 0);
     assertTrue(ret instanceof CollisionLeaf);
     assertSame(replaceValue, ret.get(replaceKey, replaceKey.hashCode(), 0));
     assertSame(value, ret.get(key, key.hashCode(), 0));
@@ -153,9 +153,9 @@ public class PersistentHashArrayMappedTrieTest {
     Object value1 = new Object();
     Object value2 = new Object();
     Object value3 = new Object();
-    CollisionLeaf<Key, Object> leaf = new CollisionLeaf<>(key1, value1, key2, value2);
+    CollisionLeaf leaf = new CollisionLeaf(key1, value1, key2, value2);
 
-    Node<Key, Object> ret = leaf.put(key3, value3, key3.hashCode(), 0);
+    Node ret = leaf.put(key3, value3, key3.hashCode(), 0);
     assertTrue(ret instanceof CollisionLeaf);
     assertSame(value1, ret.get(key1, key1.hashCode(), 0));
     assertSame(value2, ret.get(key2, key2.hashCode(), 0));
@@ -175,11 +175,11 @@ public class PersistentHashArrayMappedTrieTest {
     final Key key2 = new Key(19);
     final Object value1 = new Object();
     final Object value2 = new Object();
-    Leaf<Key, Object> leaf1 = new Leaf<>(key1, value1);
-    Leaf<Key, Object> leaf2 = new Leaf<>(key2, value2);
+    Leaf leaf1 = new Leaf(key1, value1);
+    Leaf leaf2 = new Leaf(key2, value2);
     class Verifier {
-      private void verify(Node<Key, Object> ret) {
-        CompressedIndex<Key, Object> collisionLeaf = (CompressedIndex<Key, Object>) ret;
+      private void verify(Node ret) {
+        CompressedIndex collisionLeaf = (CompressedIndex) ret;
         assertEquals((1 << 7) | (1 << 19), collisionLeaf.bitmap);
         assertEquals(2, collisionLeaf.values.length);
         assertSame(value1, collisionLeaf.values[0].get(key1, key1.hashCode(), 0));
@@ -206,15 +206,14 @@ public class PersistentHashArrayMappedTrieTest {
     final Key key2 = new Key(31 << 5 | 1); // 5 bit regions: (31, 1)
     final Object value1 = new Object();
     final Object value2 = new Object();
-    Leaf<Key, Object> leaf1 = new Leaf<>(key1, value1);
-    Leaf<Key, Object> leaf2 = new Leaf<>(key2, value2);
+    Leaf leaf1 = new Leaf(key1, value1);
+    Leaf leaf2 = new Leaf(key2, value2);
     class Verifier {
-      private void verify(Node<Key, Object> ret) {
-        CompressedIndex<Key, Object> collisionInternal = (CompressedIndex<Key, Object>) ret;
+      private void verify(Node ret) {
+        CompressedIndex collisionInternal = (CompressedIndex) ret;
         assertEquals(1 << 1, collisionInternal.bitmap);
         assertEquals(1, collisionInternal.values.length);
-        CompressedIndex<Key, Object> collisionLeaf =
-            (CompressedIndex<Key, Object>) collisionInternal.values[0];
+        CompressedIndex collisionLeaf = (CompressedIndex) collisionInternal.values[0];
         assertEquals((1 << 31) | (1 << 17), collisionLeaf.bitmap);
         assertSame(value1, ret.get(key1, key1.hashCode(), 0));
         assertSame(value2, ret.get(key2, key2.hashCode(), 0));
