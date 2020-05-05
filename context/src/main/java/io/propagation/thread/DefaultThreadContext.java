@@ -17,6 +17,7 @@
 package io.propagation.thread;
 
 import io.propagation.Context;
+import io.propagation.UntypedContext;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.logging.Level;
@@ -119,6 +120,11 @@ final class DefaultThreadContext extends ThreadContext {
   @Override
   public Executor fixedContextExecutor(final Executor e) {
     return ThreadBinding.fixedContextExecutor(this, e);
+  }
+
+  @Override
+  public UntypedContext toUntyped() {
+    return context.toUntyped();
   }
 
   @Override
